@@ -1,0 +1,361 @@
+# ============================================================
+# Online Boutique - Custom Helm Chart
+# Default values
+# ============================================================
+
+# ------------------------------------------------------------
+# Global settings (apply to all services)
+# ------------------------------------------------------------
+global:
+  imageRegistry: us-central1-docker.pkg.dev/google-samples/microservices-demo
+  imageTag: v0.10.2
+  imagePullPolicy: IfNotPresent
+
+# ------------------------------------------------------------
+# Default resources (used when service-specific resources not set)
+# ------------------------------------------------------------
+defaultResources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# ------------------------------------------------------------
+# Microservices
+# ------------------------------------------------------------
+services:
+
+  frontend:
+    enabled: true
+    replicas: 1
+    image: frontend
+    protocol: http
+    port: 8080
+    env:
+      - name: PORT
+        value: "8080"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: CURRENCY_SERVICE_ADDR
+        value: "currencyservice:7000"
+      - name: CART_SERVICE_ADDR
+        value: "cartservice:7070"
+      - name: RECOMMENDATION_SERVICE_ADDR
+        value: "recommendationservice:8080"
+      - name: SHIPPING_SERVICE_ADDR
+        value: "shippingservice:50051"
+      - name: CHECKOUT_SERVICE_ADDR
+        value: "checkoutservice:5050"
+      - name: AD_SERVICE_ADDR
+        value: "adservice:9555"
+      - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+        value: "disabled"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: http
+      path: /_healthz
+      port: 8080
+
+  productcatalogservice:
+    enabled: true
+    replicas: 1
+    image: productcatalogservice
+    protocol: grpc
+    port: 3550
+    env:
+      - name: PORT
+        value: "3550"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 3550
+
+  currencyservice:
+    enabled: true
+    replicas: 1
+    image: currencyservice
+    protocol: grpc
+    port: 7000
+    env:
+      - name: PORT
+        value: "7000"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 7000
+
+  cartservice:
+    enabled: true
+    replicas: 1
+    image: cartservice
+    protocol: grpc
+    port: 7070
+    env:
+      - name: REDIS_ADDR
+        value: "redis-cart:6379"
+      - name: DOTNET_TieredCompilation
+        value: "0"
+      - name: DOTNET_ReadyToRun
+        value: "0"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    healthCheck:
+      type: grpc
+      port: 7070
+      initialDelaySeconds: 15
+      timeoutSeconds: 10
+      periodSeconds: 20
+      failureThreshold: 5
+
+  recommendationservice:
+    enabled: true
+    replicas: 1
+    image: recommendationservice
+    protocol: grpc
+    port: 8080
+    env:
+      - name: PORT
+        value: "8080"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 220Mi
+      limits:
+        cpu: 200m
+        memory: 450Mi
+    healthCheck:
+      type: grpc
+      port: 8080
+
+  shippingservice:
+    enabled: true
+    replicas: 1
+    image: shippingservice
+    protocol: grpc
+    port: 50051
+    env:
+      - name: PORT
+        value: "50051"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 50051
+
+  paymentservice:
+    enabled: true
+    replicas: 1
+    image: paymentservice
+    protocol: grpc
+    port: 50051
+    env:
+      - name: PORT
+        value: "50051"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 50051
+
+  emailservice:
+    enabled: true
+    replicas: 1
+    image: emailservice
+    protocol: grpc
+    port: 5000
+    env:
+      - name: PORT
+        value: "5000"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 5000
+
+  checkoutservice:
+    enabled: true
+    replicas: 1
+    image: checkoutservice
+    protocol: grpc
+    port: 5050
+    env:
+      - name: PORT
+        value: "5050"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: SHIPPING_SERVICE_ADDR
+        value: "shippingservice:50051"
+      - name: PAYMENT_SERVICE_ADDR
+        value: "paymentservice:50051"
+      - name: EMAIL_SERVICE_ADDR
+        value: "emailservice:5000"
+      - name: CURRENCY_SERVICE_ADDR
+        value: "currencyservice:7000"
+      - name: CART_SERVICE_ADDR
+        value: "cartservice:7070"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    healthCheck:
+      type: grpc
+      port: 5050
+
+  adservice:
+    enabled: true
+    replicas: 1
+    image: adservice
+    protocol: grpc
+    port: 9555
+    env:
+      - name: PORT
+        value: "9555"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 180Mi
+      limits:
+        cpu: 300m
+        memory: 300Mi
+    healthCheck:
+      type: grpc
+      port: 9555
+      initialDelaySeconds: 20
+
+# ------------------------------------------------------------
+# Redis (used by cartservice)
+# ------------------------------------------------------------
+redis:
+  enabled: true
+  image: "redis:alpine"
+  port: 6379
+  resources:
+    requests:
+      cpu: 70m
+      memory: 200Mi
+    limits:
+      cpu: 125m
+      memory: 256Mi
+  persistence:
+    enabled: false
+    size: 1Gi
+    storageClass: ""
+
+# ------------------------------------------------------------
+# Ingress
+# ------------------------------------------------------------
+ingress:
+  enabled: false
+  className: nginx
+  host: boutique.example.com
+  tls:
+    enabled: false
+    secretName: boutique-tls
+    clusterIssuer: letsencrypt-staging
+
+# ------------------------------------------------------------
+# Horizontal Pod Autoscaler (HPA)
+# ------------------------------------------------------------
+hpa:
+  enabled: false
+  defaults:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  services:
+    frontend:
+      enabled: true
+    cartservice:
+      enabled: true
+    productcatalogservice:
+      enabled: true
+    recommendationservice:
+      enabled: true
+    checkoutservice:
+      enabled: true
+    adservice:
+      enabled: true
+
+# ------------------------------------------------------------
+# NetworkPolicy
+# ------------------------------------------------------------
+networkPolicy:
+  enabled: false
+  defaultDenyAll: true
+  allowDNS: true
+  ingressNamespace:
+    name: ingress-nginx
+
+# ------------------------------------------------------------
+# ServiceAccount
+# ------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: ""
+
+# ------------------------------------------------------------
+# RBAC
+# ------------------------------------------------------------
+rbac:
+  enabled: false
+  developerAccess:
+    enabled: false
+    groupName: developers
+    allowWrite: false

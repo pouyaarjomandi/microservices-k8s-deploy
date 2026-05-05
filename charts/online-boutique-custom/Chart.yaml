@@ -1,0 +1,32 @@
+apiVersion: v2
+name: online-boutique-custom
+description: |
+  A custom Helm chart for deploying Google's Online Boutique microservices demo.
+  Includes HPA, NetworkPolicies, RBAC, and TLS via cert-manager.
+type: application
+
+# Chart version
+# Follows SemVer: MAJOR.MINOR.PATCH
+version: 0.1.0
+
+# Version of the application this chart deploys
+# Matches the image tag of Online Boutique services from Google
+appVersion: "0.10.2"
+
+# Minimum required Kubernetes version
+kubeVersion: ">=1.24.0-0"
+
+keywords:
+  - microservices
+  - demo
+  - kubernetes
+  - online-boutique
+  - grpc
+
+maintainers:
+  - name: Pouya Arjmandiakram
+    url: https://github.com/pouyaarjomandi
+
+home: https://github.com/pouyaarjomandi/microservices-k8s-deploy
+sources:
+  - https://github.com/GoogleCloudPlatform/microservices-demo

@@ -1,0 +1,84 @@
+{{- range $serviceName, $service := .Values.services }}
+{{- if ne $service.enabled false }}
+{{- $labels := dict "name" $serviceName "root" $ }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName }}
+  labels:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+    {{- include "online-boutique.commonLabels" $ | nindent 4 }}
+spec:
+  replicas: {{ $service.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" $labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "online-boutique.selectorLabels" $labels | nindent 8 }}
+        {{- include "online-boutique.commonLabels" $ | nindent 8 }}
+    spec:
+      {{- if $.Values.serviceAccount.create }}
+      serviceAccountName: {{ $.Values.serviceAccount.name | default (printf "%s-sa" $.Chart.Name) }}
+      {{- end }}
+      containers:
+        - name: {{ $serviceName }}
+          image: "{{ $.Values.global.imageRegistry }}/{{ $service.image }}:{{ $.Values.global.imageTag }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: {{ $service.protocol | default "http" }}
+              containerPort: {{ $service.port }}
+          {{- with $service.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml (default $.Values.defaultResources $service.resources) | nindent 12 }}
+          {{- with $service.healthCheck }}
+          livenessProbe:
+            {{- if eq .type "http" }}
+            httpGet:
+              path: {{ .path }}
+              port: {{ .port }}
+            {{- else if eq .type "grpc" }}
+            grpc:
+              port: {{ .port }}
+            {{- end }}
+            {{- with .initialDelaySeconds }}
+            initialDelaySeconds: {{ . }}
+            {{- end }}
+            {{- with .timeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
+            {{- with .periodSeconds }}
+            periodSeconds: {{ . }}
+            {{- end }}
+            {{- with .failureThreshold }}
+            failureThreshold: {{ . }}
+            {{- end }}
+          readinessProbe:
+            {{- if eq .type "http" }}
+            httpGet:
+              path: {{ .path }}
+              port: {{ .port }}
+            {{- else if eq .type "grpc" }}
+            grpc:
+              port: {{ .port }}
+            {{- end }}
+            {{- with .initialDelaySeconds }}
+            initialDelaySeconds: {{ . }}
+            {{- end }}
+            {{- with .timeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
+            {{- with .periodSeconds }}
+            periodSeconds: {{ . }}
+            {{- end }}
+            {{- with .failureThreshold }}
+            failureThreshold: {{ . }}
+            {{- end }}
+          {{- end }}
+{{- end }}
+{{- end }}

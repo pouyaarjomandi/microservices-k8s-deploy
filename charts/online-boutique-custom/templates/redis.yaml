@@ -1,0 +1,92 @@
+{{- if .Values.redis.enabled }}
+{{- $labels := dict "name" "redis-cart" "root" $ }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cart
+  labels:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+    {{- include "online-boutique.commonLabels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" $labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "online-boutique.selectorLabels" $labels | nindent 8 }}
+        {{- include "online-boutique.commonLabels" $ | nindent 8 }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default (printf "%s-sa" .Chart.Name) }}
+      {{- end }}
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image | default "redis:alpine" | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.redis.port | default 6379 }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.redis.port | default 6379 }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.redis.port | default 6379 }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          {{- if .Values.redis.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: redis-cart-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cart
+  labels:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+    {{- include "online-boutique.commonLabels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: {{ .Values.redis.port | default 6379 }}
+      targetPort: {{ .Values.redis.port | default 6379 }}
+      protocol: TCP
+  selector:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+{{- if .Values.redis.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-cart-data
+  labels:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+    {{- include "online-boutique.commonLabels" $ | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size | default "1Gi" | quote }}
+  {{- with .Values.redis.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,31 @@
+{{- if .Values.hpa.enabled }}
+{{- $defaults := .Values.hpa.defaults }}
+{{- range $serviceName, $hpaConfig := .Values.hpa.services }}
+{{- $service := index $.Values.services $serviceName }}
+{{- if and $hpaConfig.enabled $service (ne $service.enabled false) }}
+{{- $labels := dict "name" $serviceName "root" $ }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $serviceName }}-hpa
+  labels:
+    {{- include "online-boutique.selectorLabels" $labels | nindent 4 }}
+    {{- include "online-boutique.commonLabels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $serviceName }}
+  minReplicas: {{ $hpaConfig.minReplicas | default $defaults.minReplicas }}
+  maxReplicas: {{ $hpaConfig.maxReplicas | default $defaults.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $hpaConfig.targetCPUUtilizationPercentage | default $defaults.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end }}
+{{- end }}

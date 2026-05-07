@@ -1,0 +1,137 @@
+═══════════════════════════════════════════════════════════════
+  Online Boutique deployed successfully! 🎉
+═══════════════════════════════════════════════════════════════
+
+Release name:    {{ .Release.Name }}
+Namespace:       {{ .Release.Namespace }}
+Chart version:   {{ .Chart.Version }}
+App version:     {{ .Chart.AppVersion }}
+
+═══════════════════════════════════════════════════════════════
+  How to access the application
+═══════════════════════════════════════════════════════════════
+
+{{- if .Values.ingress.enabled }}
+
+The application is exposed via Ingress:
+
+  URL: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
+
+Note: Make sure your DNS or /etc/hosts points {{ .Values.ingress.host }}
+to your cluster's ingress IP.
+
+For local testing, you can add this to /etc/hosts:
+  <INGRESS_IP> {{ .Values.ingress.host }}
+
+Get the ingress IP:
+  kubectl get ingress -n {{ .Release.Namespace }}
+
+{{- else }}
+
+Ingress is disabled. Use port-forward to access the frontend:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/frontend 8080:{{ .Values.services.frontend.port }}
+
+Then open: http://localhost:8080
+
+{{- end }}
+
+═══════════════════════════════════════════════════════════════
+  Useful commands
+═══════════════════════════════════════════════════════════════
+
+# Check pod status
+kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+# Watch deployment progress
+kubectl get pods -n {{ .Release.Namespace }} -w
+
+# View logs of a specific service (e.g. frontend)
+kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name=frontend --tail=50 -f
+
+# Get all resources created by this release
+kubectl get all -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.hpa.enabled }}
+
+═══════════════════════════════════════════════════════════════
+  Horizontal Pod Autoscaler is enabled
+═══════════════════════════════════════════════════════════════
+
+# Check HPA status
+kubectl get hpa -n {{ .Release.Namespace }}
+
+# Watch scaling events
+kubectl get hpa -n {{ .Release.Namespace }} -w
+
+# Generate load to test scaling (requires k6 installed):
+k6 run tests/k6/load-test.js
+
+NOTE: HPA requires metrics-server to be installed in the cluster.
+Verify with: kubectl get deployment metrics-server -n kube-system
+
+{{- end }}
+
+{{- if .Values.networkPolicy.enabled }}
+
+═══════════════════════════════════════════════════════════════
+  Network Policies are enabled
+═══════════════════════════════════════════════════════════════
+
+# View all network policies
+kubectl get networkpolicy -n {{ .Release.Namespace }}
+
+IMPORTANT: NetworkPolicy enforcement requires a CNI plugin that
+supports them (e.g. Calico, Cilium). The default CNIs in Minikube
+and kind do NOT enforce NetworkPolicies. The manifests apply but
+traffic is not actually restricted.
+
+For local testing with enforcement:
+  - kind:    use kind with Calico setup
+  - minikube: minikube start --network-plugin=cni --cni=calico
+
+{{- end }}
+
+{{- if and .Values.rbac.enabled .Values.rbac.developerAccess.enabled }}
+
+═══════════════════════════════════════════════════════════════
+  Developer RBAC is enabled
+═══════════════════════════════════════════════════════════════
+
+Group "{{ .Values.rbac.developerAccess.groupName | default "developers" }}" has
+{{- if .Values.rbac.developerAccess.allowWrite }} read AND write {{- else }} read-only {{- end }} access
+to resources in namespace "{{ .Release.Namespace }}".
+
+# View the role
+kubectl describe role developer-access -n {{ .Release.Namespace }}
+
+# View the binding
+kubectl describe rolebinding developer-access-binding -n {{ .Release.Namespace }}
+
+To grant a user access, add them to the "{{ .Values.rbac.developerAccess.groupName | default "developers" }}"
+group in your authentication system (OIDC, AWS IAM, etc.).
+
+{{- end }}
+
+═══════════════════════════════════════════════════════════════
+  Troubleshooting
+═══════════════════════════════════════════════════════════════
+
+# If pods are not starting:
+kubectl describe pod -n {{ .Release.Namespace }} <pod-name>
+
+# If you see ImagePullBackOff:
+# - Check internet connectivity
+# - The images come from us-central1-docker.pkg.dev (Google's public registry)
+
+# If cartservice fails:
+# - It depends on Redis. Check that redis-cart pod is Running:
+kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name=redis-cart
+
+═══════════════════════════════════════════════════════════════
+  Documentation
+═══════════════════════════════════════════════════════════════
+
+For more information, see:
+  - Project README:        https://github.com/pouyaarjomandi/microservices-k8s-deploy
+  - Online Boutique demo:  https://github.com/GoogleCloudPlatform/microservices-demo

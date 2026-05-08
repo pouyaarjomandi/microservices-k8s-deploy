@@ -1,0 +1,171 @@
+# ============================================================
+# Development environment overrides
+# ============================================================
+# Apply on top of values.yaml:
+#   helm install boutique-dev ./charts/online-boutique-custom \
+#     -n dev --create-namespace \
+#     -f charts/online-boutique-custom/values-dev.yaml
+# ============================================================
+
+# Service overrides
+# Each service has explicit resources to ensure dev-grade allocations
+# (defaultResources is ignored when a service defines its own resources)
+services:
+
+  frontend:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  productcatalogservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  currencyservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  cartservice:
+    replicas: 1
+    # cartservice (.NET) needs more memory and CPU than other services
+    # to handle JIT compilation and gRPC probes properly
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  recommendationservice:
+    replicas: 1
+    # Python ML service - needs more memory for model loading
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+
+  shippingservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  paymentservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  emailservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  checkoutservice:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  adservice:
+    replicas: 1
+    # Java service - JVM needs more memory and slower probes in dev/minikube
+    resources:
+      requests:
+        cpu: 200m
+        memory: 300Mi
+      limits:
+        cpu: 500m
+        memory: 700Mi
+    healthCheck:
+      type: grpc
+      port: 9555
+      initialDelaySeconds: 60
+      timeoutSeconds: 10
+      periodSeconds: 20
+      failureThreshold: 5
+
+# ------------------------------------------------------------
+# Redis without persistence in dev (data is ephemeral)
+# ------------------------------------------------------------
+redis:
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# ------------------------------------------------------------
+# Ingress without TLS for fast iteration
+# ------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  host: boutique-dev.example.com
+  tls:
+    enabled: false
+
+# ------------------------------------------------------------
+# HPA disabled in dev (saves resources, easier debugging)
+# ------------------------------------------------------------
+hpa:
+  enabled: false
+
+# ------------------------------------------------------------
+# NetworkPolicy disabled in dev for easier debugging
+# Enable when testing security configurations
+# ------------------------------------------------------------
+networkPolicy:
+  enabled: false
+
+# ------------------------------------------------------------
+# RBAC: developers can write in dev
+# ------------------------------------------------------------
+rbac:
+  enabled: true
+  developerAccess:
+    enabled: true
+    groupName: developers
+    allowWrite: true   # Devs can modify resources in dev

@@ -1,0 +1,207 @@
+# ============================================================
+# Production environment overrides
+# ============================================================
+# Apply on top of values.yaml:
+#   helm install boutique-prod ./charts/online-boutique-custom \
+#     -n prod --create-namespace \
+#     -f charts/online-boutique-custom/values-prod.yaml
+# ============================================================
+
+# Service overrides
+# Each service has explicit resources to ensure prod-grade allocations
+# (defaultResources is ignored when a service defines its own resources)
+services:
+
+  frontend:
+    # Replicas matched to HPA minReplicas to avoid initial scale-up event
+    replicas: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  productcatalogservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  currencyservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  cartservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 300m
+        memory: 128Mi
+      limits:
+        cpu: 600m
+        memory: 256Mi
+
+  recommendationservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+
+  shippingservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  paymentservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  emailservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  checkoutservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+  adservice:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 300m
+        memory: 300Mi
+      limits:
+        cpu: 500m
+        memory: 700Mi
+    healthCheck:
+      type: grpc
+      port: 9555
+      initialDelaySeconds: 60
+      timeoutSeconds: 10
+      periodSeconds: 20
+      failureThreshold: 5
+
+# ------------------------------------------------------------
+# Redis with persistence in prod
+# ------------------------------------------------------------
+redis:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""   # use cluster default; override for cloud (e.g. gp3 on EKS)
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# ------------------------------------------------------------
+# Ingress with TLS via Let's Encrypt production
+# ------------------------------------------------------------
+# IMPORTANT: Replace 'boutique.example.com' with your actual domain
+# before deploying. Let's Encrypt cannot issue certificates for
+# example.com or private hostnames.
+ingress:
+  enabled: true
+  className: nginx
+  host: boutique.example.com   # ← REPLACE with your real domain
+  tls:
+    enabled: true
+    secretName: boutique-prod-tls
+    clusterIssuer: letsencrypt-prod
+
+# ------------------------------------------------------------
+# HPA - replicas (above) match minReplicas to avoid scale events on deploy
+# ------------------------------------------------------------
+hpa:
+  enabled: true
+  defaults:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  services:
+    frontend:
+      enabled: true
+      minReplicas: 3       # matched with services.frontend.replicas
+      maxReplicas: 20
+    cartservice:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+    productcatalogservice:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+    recommendationservice:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+    checkoutservice:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+    adservice:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+
+# ------------------------------------------------------------
+# NetworkPolicy enabled in prod
+# ------------------------------------------------------------
+networkPolicy:
+  enabled: true
+  defaultDenyAll: true
+  allowDNS: true
+  ingressNamespace:
+    name: ingress-nginx
+
+# ------------------------------------------------------------
+# RBAC: developers have READ-ONLY access in prod
+# ------------------------------------------------------------
+rbac:
+  enabled: true
+  developerAccess:
+    enabled: true
+    groupName: developers
+    allowWrite: false

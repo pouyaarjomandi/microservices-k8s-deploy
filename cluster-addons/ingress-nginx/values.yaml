@@ -1,0 +1,38 @@
+# ============================================================
+# Custom values for ingress-nginx Helm chart
+# Used during installation:
+#   helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+#     --namespace ingress-nginx --create-namespace \
+#     -f cluster-addons/ingress-nginx/values.yaml
+# ============================================================
+controller:
+  # Number of NGINX controller replicas.
+  # 1 is enough for dev/local; use 2+ for production high availability.
+  replicaCount: 1
+  # Resource requests/limits for the controller pod.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # Service type for exposing the controller.
+  # - LoadBalancer: suitable for EKS; provisions a cloud load balancer.
+  # - NodePort: useful for local clusters such as Minikube/kind.
+  service:
+    type: LoadBalancer
+  # Enable Prometheus metrics endpoint.
+  # serviceMonitor requires Prometheus Operator.
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+  # Pod Disruption Budget for high availability in production.
+  # Enable only when replicaCount >= 2.
+  # podDisruptionBudget:
+  #   enabled: true
+  #   minAvailable: 1
+# Admission webhook validates Ingress resources before creation.
+admissionWebhooks:
+  enabled: true

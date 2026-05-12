@@ -1,0 +1,55 @@
+# ============================================================
+# .gitignore for Helm + Kubernetes project
+# ============================================================
+
+# Helm
+*.tgz
+.helm/
+charts/*/charts/
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Rendered templates (output of helm template)
+rendered.yaml
+rendered-*.yaml
+
+# Environment-specific secrets and overrides
+secrets.yaml
+*-secrets.yaml
+*.local.yaml
+*-local.yaml
+
+# Temporary fix files (used during debugging)
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# k6 test outputs
+k6-results.json
+*.k6.json
+
+# Local credentials
+.env
+.env.local
+*.pem
+*.key
+
+# Backup files
+*.bak
+*.backup
+*.old
